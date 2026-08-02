@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>관리자 · blog8</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="spine">
+      <div class="spine-dot"></div>
+      <a href="index.html">blog8</a>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="mono">관리자</div>
+        <nav>
+          <a href="index.html">글 보기</a>
+          <a href="#settings">블로그 설정</a>
+          <a href="#" id="logout-link">로그아웃</a>
+        </nav>
+      </div>
+
+      <section class="hero" style="margin-bottom:40px;">
+        <h1>새 글 작성</h1>
+        <p>이미지는 업로드 시 자동으로 리사이즈·압축된 뒤 Storage에 저장됩니다.</p>
+      </section>
+
+      <form id="post-form" class="panel" style="margin-bottom:64px;">
+        <div class="field">
+          <label for="title">제목</label>
+          <input type="text" id="title" required>
+        </div>
+        <div class="field">
+          <label for="excerpt">요약 (목록에 표시)</label>
+          <input type="text" id="excerpt" maxlength="140">
+        </div>
+        <div class="field">
+          <label for="tags">태그 (쉼표로 구분, 최대 10개)</label>
+          <input type="text" id="tags" placeholder="예: 일상, 개발, 회고">
+        </div>
+        <div class="field">
+          <label for="cover">대표 이미지</label>
+          <input type="file" id="cover" accept="image/*">
+          <div class="hint">비워두면 대표 이미지 없이 발행됩니다. 업로드 시 자동 압축됩니다.</div>
+        </div>
+        <div class="field">
+          <label for="content">본문</label>
+          <div class="editor-toolbar">
+            <button type="button" data-cmd="bold" title="굵게"><b>B</b></button>
+            <button type="button" data-cmd="italic" title="기울임"><i>I</i></button>
+            <button type="button" data-cmd="formatBlock" data-value="H2" title="제목">H2</button>
+            <button type="button" data-cmd="formatBlock" data-value="P" title="본문 텍스트">P</button>
+            <button type="button" data-cmd="insertUnorderedList" title="목록">•</button>
+            <button type="button" id="editor-link-btn" title="링크">🔗</button>
+            <button type="button" id="editor-img-btn" title="이미지 삽입">🖼</button>
+            <input type="file" id="editor-img-input" accept="image/*" hidden>
+          </div>
+          <div class="editor-content" id="content" contenteditable="true" data-placeholder="본문을 입력하세요..."></div>
+        </div>
+        <div class="field">
+          <label><input type="checkbox" id="published" checked style="width:auto;display:inline-block;margin-right:6px;"> 즉시 공개</label>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button type="submit" class="btn" id="submit-btn">발행하기</button>
+          <button type="button" class="btn secondary" id="cancel-edit-btn" style="display:none;">취소</button>
+        </div>
+      </form>
+
+      <section style="margin-bottom:72px;">
+        <h1 style="font-size:1.4rem;margin-bottom:8px;">작성한 글</h1>
+        <div id="admin-list"><div class="empty-state">불러오는 중...</div></div>
+      </section>
+
+      <section id="settings" style="margin-bottom:72px;">
+        <h1 style="font-size:1.4rem;margin-bottom:8px;">블로그 설정</h1>
+        <p class="hint" style="margin-bottom:20px;">블로그 이름, 소개 문구, 푸터 문구, 파비콘을 수정합니다. 사이트 전체에 즉시 반영됩니다.</p>
+        <form id="settings-form" class="panel settings-grid" style="margin-bottom:40px;">
+          <div class="field" style="margin-bottom:0;">
+            <label for="site_title">블로그 이름 (좌측 상단 표시)</label>
+            <input type="text" id="site_title" maxlength="40">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label for="site_tagline">소개 문구 (홈 화면 큰 제목)</label>
+            <input type="text" id="site_tagline" maxlength="80">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label for="footer_text">푸터 문구</label>
+            <input type="text" id="footer_text" maxlength="60">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label for="favicon">파비콘 (브라우저 탭 아이콘)</label>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <img id="favicon-preview" src="" alt="" style="width:32px;height:32px;border-radius:6px;border:1px solid var(--line);display:none;object-fit:cover;">
+              <input type="file" id="favicon" accept="image/png,image/jpeg,image/x-icon,image/svg+xml" style="flex:1;">
+            </div>
+            <div class="hint">정사각형 PNG 권장 (예: 64×64). 업로드 즉시 적용됩니다.</div>
+          </div>
+          <button type="submit" class="btn" id="settings-save-btn" style="width:fit-content;">설정 저장</button>
+        </form>
+
+        <h1 style="font-size:1.1rem;margin-bottom:8px;">연결 / 접근 정보</h1>
+        <div class="panel" style="margin-bottom:24px;">
+          <div class="info-row"><span class="k">Supabase URL</span><span class="v" id="conn-url">-</span></div>
+          <div class="info-row"><span class="k">이미지 버킷</span><span class="v" id="conn-bucket">-</span></div>
+          <div class="info-row"><span class="k">관리자 페이지</span><span class="v">admin.html (메뉴에 노출되지 않음)</span></div>
+          <div class="info-row"><span class="k">로그인 페이지</span><span class="v">login.html</span></div>
+        </div>
+        <p class="hint">
+          연결 정보(Supabase URL/키)는 보안상 이 화면에서 바로 수정할 수 없습니다.
+          변경하려면 <span class="mono" style="text-transform:none">js/api.js</span> 파일을 직접 편집하세요.
+          이 키는 감춘다고 안전해지는 값이 아니라 공개돼도 되도록 설계된 값입니다 — 실제 보안은 Supabase의 RLS(행 단위 접근 제어) 정책이 담당합니다.
+        </p>
+      </section>
+
+      <section>
+        <h1 style="font-size:1.1rem;margin-bottom:8px;">관리자 페이지 기능 요약</h1>
+        <div class="panel">
+          <div class="info-row"><span class="k">글 작성</span><span class="v" style="text-align:left;">제목·요약·대표이미지·본문(리치 에디터)·공개여부</span></div>
+          <div class="info-row"><span class="k">글 관리</span><span class="v" style="text-align:left;">목록 조회, 공개/비공개 전환, 삭제</span></div>
+          <div class="info-row"><span class="k">이미지</span><span class="v" style="text-align:left;">업로드 시 자동 리사이즈·압축 후 Storage 저장</span></div>
+          <div class="info-row"><span class="k">사이트 설정</span><span class="v" style="text-align:left;">블로그 이름·소개문구·푸터·파비콘</span></div>
+          <div class="info-row"><span class="k">인증</span><span class="v" style="text-align:left;">Supabase Auth 로그인/로그아웃, 미로그인 시 자동 리다이렉트</span></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { requireAuth, logout } from './js/auth.js';
+    import { uploadImage, createPost, updatePost, fetchAllPostsForAdmin, fetchPostById, renderAdminList, parseTags } from './js/editor.js';
+    import { toast, getSettings, saveSettings, applyFavicon, CONNECTION_INFO, BUCKET_NAME } from './js/api.js';
+
+    const session = await requireAuth();
+    if (session) {
+      document.getElementById('logout-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        logout();
+      });
+
+      // ---- connection info (read-only display) ----
+      document.getElementById('conn-url').textContent = CONNECTION_INFO.url;
+      document.getElementById('conn-bucket').textContent = BUCKET_NAME;
+
+      // ---- settings ----
+      const settingsForm = document.getElementById('settings-form');
+      const faviconPreview = document.getElementById('favicon-preview');
+      let currentFaviconUrl = '';
+
+      const currentSettings = await getSettings();
+      settingsForm.site_title.value = currentSettings.site_title;
+      document.getElementById('site_tagline').value = currentSettings.site_tagline;
+      document.getElementById('footer_text').value = currentSettings.footer_text;
+      currentFaviconUrl = currentSettings.favicon_url || '';
+      if (currentFaviconUrl) {
+        faviconPreview.src = currentFaviconUrl;
+        faviconPreview.style.display = 'block';
+        applyFavicon(currentFaviconUrl);
+      }
+
+      settingsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('settings-save-btn');
+        btn.disabled = true; btn.textContent = '저장 중...';
+        try {
+          const faviconFile = document.getElementById('favicon').files[0];
+          if (faviconFile) {
+            currentFaviconUrl = await uploadImage(faviconFile);
+            faviconPreview.src = currentFaviconUrl;
+            faviconPreview.style.display = 'block';
+            applyFavicon(currentFaviconUrl);
+          }
+          await saveSettings({
+            site_title: document.getElementById('site_title').value.trim(),
+            site_tagline: document.getElementById('site_tagline').value.trim(),
+            footer_text: document.getElementById('footer_text').value.trim(),
+            favicon_url: currentFaviconUrl
+          });
+          document.getElementById('favicon').value = '';
+          toast('설정을 저장했습니다');
+        } catch (err) {
+          toast(err.message, true);
+        } finally {
+          btn.disabled = false; btn.textContent = '설정 저장';
+        }
+      });
+
+      // ---- post list ----
+      const listEl = document.getElementById('admin-list');
+      async function reload() {
+        try {
+          const posts = await fetchAllPostsForAdmin();
+          renderAdminList(posts, listEl, { onChange: reload, onEdit: startEdit });
+        } catch (err) {
+          listEl.innerHTML = `<div class="empty-state">목록을 불러오지 못했습니다.</div>`;
+          toast(err.message, true);
+        }
+      }
+      reload();
+
+      // ---- edit mode ----
+      let editingId = null;
+      let editingCoverUrl = null;
+      const cancelEditBtn = document.getElementById('cancel-edit-btn');
+
+      function exitEditMode() {
+        editingId = null;
+        editingCoverUrl = null;
+        form.reset();
+        contentEl.innerHTML = '';
+        document.getElementById('published').checked = true;
+        document.getElementById('submit-btn').textContent = '발행하기';
+        cancelEditBtn.style.display = 'none';
+      }
+
+      async function startEdit(id) {
+        try {
+          const post = await fetchPostById(id);
+          document.getElementById('title').value = post.title || '';
+          document.getElementById('excerpt').value = post.excerpt || '';
+          document.getElementById('tags').value = (post.tags || []).join(', ');
+          contentEl.innerHTML = post.content || '';
+          document.getElementById('published').checked = !!post.published;
+          editingId = id;
+          editingCoverUrl = post.cover_image || null;
+          document.getElementById('submit-btn').textContent = '수정 완료';
+          cancelEditBtn.style.display = '';
+          form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } catch (err) {
+          toast(err.message, true);
+        }
+      }
+
+      cancelEditBtn.addEventListener('click', exitEditMode);
+
+      // ---- rich text toolbar ----
+      const contentEl = document.getElementById('content');
+      document.querySelectorAll('.editor-toolbar [data-cmd]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const cmd = btn.dataset.cmd;
+          if (cmd === 'formatBlock') {
+            document.execCommand(cmd, false, `<${btn.dataset.value}>`);
+          } else {
+            document.execCommand(cmd, false, null);
+          }
+          contentEl.focus();
+        });
+      });
+      document.getElementById('editor-link-btn').addEventListener('click', () => {
+        const url = prompt('링크 주소를 입력하세요 (https://...)');
+        if (url) document.execCommand('createLink', false, url);
+        contentEl.focus();
+      });
+      document.getElementById('editor-img-btn').addEventListener('click', () => {
+        document.getElementById('editor-img-input').click();
+      });
+      document.getElementById('editor-img-input').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        e.target.value = '';
+        if (!file) return;
+        toast('이미지 업로드 중...');
+        try {
+          const url = await uploadImage(file);
+          document.execCommand('insertImage', false, url);
+          contentEl.focus();
+        } catch (err) {
+          toast(err.message, true);
+        }
+      });
+
+      // ---- post form submit ----
+      const form = document.getElementById('post-form');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submit-btn');
+        btn.disabled = true;
+        btn.textContent = '발행 중...';
+        try {
+          const coverFile = document.getElementById('cover').files[0];
+          const tags = parseTags(document.getElementById('tags').value);
+          if (editingId) {
+            const coverUrl = coverFile ? await uploadImage(coverFile) : editingCoverUrl;
+            await updatePost(editingId, {
+              title: document.getElementById('title').value.trim(),
+              excerpt: document.getElementById('excerpt').value.trim(),
+              content: contentEl.innerHTML,
+              cover_image: coverUrl,
+              published: document.getElementById('published').checked,
+              tags
+            });
+            toast('수정했습니다');
+            exitEditMode();
+          } else {
+            const coverUrl = coverFile ? await uploadImage(coverFile) : null;
+            await createPost({
+              title: document.getElementById('title').value.trim(),
+              excerpt: document.getElementById('excerpt').value.trim(),
+              content: contentEl.innerHTML,
+              coverUrl,
+              published: document.getElementById('published').checked,
+              tags
+            });
+            toast('발행했습니다');
+            form.reset();
+            contentEl.innerHTML = '';
+            document.getElementById('published').checked = true;
+          }
+          reload();
+        } catch (err) {
+          toast(err.message, true);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = editingId ? '수정 완료' : '발행하기';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

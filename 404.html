@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>페이지를 찾을 수 없음 · blog8</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="shell">
+    <main class="main" style="display:flex;align-items:center;justify-content:center;min-height:100vh;">
+      <div style="text-align:center;">
+        <p class="mono">404</p>
+        <h1 style="font-size:1.8rem;margin:10px 0;">존재하지 않는 페이지입니다</h1>
+        <p style="color:var(--ink-soft);">잠시 후 홈으로 이동합니다.</p>
+      </div>
+    </main>
+  </div>
+  <script>
+    // 정적 호스팅에서 정의되지 않은 모든 경로로 접속 시 이 파일이 열리도록
+    // 호스팅 설정(cloudtype 등)에서 404 처리 페이지로 지정해두세요.
+    setTimeout(() => { location.replace('index.html'); }, 1200);
+  </script>
+</body>
+</html>

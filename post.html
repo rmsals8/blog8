@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>글 · blog8</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="spine">
+      <div class="spine-dot"></div>
+      <a href="index.html">blog8</a>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="mono"><a href="index.html">← 목록으로</a></div>
+        <nav>
+          <a href="index.html">글</a>
+        </nav>
+      </div>
+
+      <div id="article-root">
+        <div class="empty-state">불러오는 중...</div>
+      </div>
+
+      <footer class="site-footer">
+        <span class="mono">© <span id="year"></span> blog8</span>
+      </footer>
+    </main>
+  </div>
+
+  <script type="module">
+    import { fetchPostBySlug, sanitizeHtml, escapeHtml, renderTagChips } from './js/posts.js';
+    import { formatDate, toast, getSettings, applyFavicon } from './js/api.js';
+    import { applySeo } from './js/seo.js';
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const settings = await getSettings();
+    document.querySelector('.spine a').textContent = settings.site_title;
+    document.querySelector('footer.site-footer .mono').innerHTML =
+      `${settings.footer_text} · <span>${new Date().getFullYear()}</span>`;
+    applyFavicon(settings.favicon_url);
+
+    const root = document.getElementById('article-root');
+    const slug = new URLSearchParams(location.search).get('slug');
+
+    function goHomeNotFound() {
+      root.innerHTML = `<div class="empty-state">글을 찾을 수 없습니다. 잠시 후 홈으로 이동합니다.</div>`;
+      setTimeout(() => { location.href = 'index.html'; }, 1500);
+    }
+
+    if (!slug) {
+      goHomeNotFound();
+    } else {
+      try {
+        const post = await fetchPostBySlug(slug);
+        applySeo({
+          title: post.title,
+          description: post.excerpt,
+          image: post.cover_image,
+          url: location.href,
+          siteTitle: settings.site_title,
+          publishedTime: post.created_at,
+          tags: post.tags
+        });
+        root.innerHTML = `
+          <article>
+            <div class="article-head">
+              <div class="mono">${formatDate(post.created_at)}</div>
+              <h1>${escapeHtml(post.title)}</h1>
+              ${renderTagChips(post.tags)}
+            </div>
+            ${post.cover_image ? `<img class="article-cover" src="${post.cover_image}" alt="">` : ''}
+            <div class="article-body">${sanitizeHtml(post.content || '')}</div>
+          </article>
+        `;
+      } catch (err) {
+        goHomeNotFound();
+      }
+    }
+  </script>
+</body>
+</html>

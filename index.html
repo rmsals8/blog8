@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>blog8 — 기록</title>
+<meta name="description" content="생각과 기록을 남기는 개인 블로그">
+<link rel="canonical" href="https://YOUR_DOMAIN/index.html">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="spine">
+      <div class="spine-dot"></div>
+      <a href="index.html">blog8</a>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="mono" id="page-label">전체 글</div>
+        <nav>
+          <a href="index.html" class="active">글</a>
+        </nav>
+      </div>
+
+      <section class="hero">
+        <h1 id="site-headline">생각을 기록하는 공간</h1>
+        <p>정리되지 않은 생각도, 다듬어진 글도 여기 남깁니다.</p>
+      </section>
+
+      <section class="post-list" id="post-list">
+        <div class="empty-state">불러오는 중...</div>
+      </section>
+
+      <footer class="site-footer">
+        <span class="mono">© <span id="year"></span> blog8</span>
+      </footer>
+    </main>
+  </div>
+
+  <script type="module">
+    import { fetchPublishedPosts, renderPostList } from './js/posts.js';
+    import { toast, getSettings, applyFavicon } from './js/api.js';
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const settings = await getSettings();
+    document.title = `${settings.site_title} — ${settings.site_tagline}`;
+    document.querySelector('.spine a').textContent = settings.site_title;
+    document.getElementById('site-headline').textContent = settings.site_tagline;
+    document.querySelector('footer.site-footer .mono').innerHTML =
+      `${settings.footer_text} · <span id="year">${new Date().getFullYear()}</span>`;
+    applyFavicon(settings.favicon_url);
+
+    const listEl = document.getElementById('post-list');
+    try {
+      const posts = await fetchPublishedPosts();
+      renderPostList(posts, listEl);
+    } catch (err) {
+      listEl.innerHTML = `<div class="empty-state">글을 불러오지 못했습니다.</div>`;
+      toast(err.message, true);
+    }
+  </script>
+</body>
+</html>
