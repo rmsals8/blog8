@@ -2,10 +2,12 @@
 import { supabase, formatDate } from './api.js';
 
 export async function fetchPublishedPosts({ tag = null, category = null } = {}) {
+  const nowIso = new Date().toISOString();
   let query = supabase
     .from('posts')
-    .select('id, title, slug, excerpt, cover_image, tags, category, created_at')
+    .select('id, title, slug, excerpt, cover_image, tags, category, created_at, publish_at')
     .eq('published', true)
+    .or(`publish_at.is.null,publish_at.lte.${nowIso}`)
     .order('created_at', { ascending: false });
   if (tag) query = query.contains('tags', [tag]);
   if (category) query = query.eq('category', category);
@@ -15,11 +17,13 @@ export async function fetchPublishedPosts({ tag = null, category = null } = {}) 
 }
 
 export async function fetchPostBySlug(slug) {
+  const nowIso = new Date().toISOString();
   const { data, error } = await supabase
     .from('posts')
     .select('*')
     .eq('slug', slug)
     .eq('published', true)
+    .or(`publish_at.is.null,publish_at.lte.${nowIso}`)
     .single();
   if (error) throw error;
   return data;

@@ -36,17 +36,18 @@ export function parseTags(raw = '') {
   )].slice(0, 10);
 }
 
-export async function createPost({ title, excerpt, content, coverUrl, published, tags, category }) {
+export async function createPost({ title, excerpt, content, coverUrl, published, tags, category, publishAt }) {
   const slug = slugify(title);
-  const { error } = await supabase.from('posts').insert({
+  const { data, error } = await supabase.from('posts').insert({
     title, slug, excerpt, content,
     cover_image: coverUrl,
     published,
     tags: tags || [],
-    category: category || null
-  });
+    category: category || null,
+    publish_at: publishAt || null
+  }).select('id, slug').single();
   if (error) throw error;
-  return slug;
+  return data; // { id, slug }
 }
 
 export async function updatePost(id, fields) {
@@ -113,10 +114,15 @@ export async function fetchPostById(id) {
 export async function fetchAllPostsForAdmin() {
   const { data, error } = await supabase
     .from('posts')
-    .select('id, title, slug, published, tags, category, created_at')
+    .select('id, title, slug, published, tags, category, publish_at, created_at')
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data;
+}
+
+// published=true인데 publish_at이 미래면 아직 노출 전인 "예약" 상태
+function isScheduled(p) {
+  return !!(p.published && p.publish_at && new Date(p.publish_at) > new Date());
 }
 
 export function renderAdminList(posts, container, { onChange, onEdit }) {
@@ -124,10 +130,14 @@ export function renderAdminList(posts, container, { onChange, onEdit }) {
     container.innerHTML = `<div class="empty-state">작성된 글이 없습니다. 위에서 새 글을 작성하세요.</div>`;
     return;
   }
-  container.innerHTML = posts.map(p => `
+  container.innerHTML = posts.map(p => {
+    const scheduled = isScheduled(p);
+    const statusText = !p.published ? '임시저장' : (scheduled ? `예약 · ${formatDate(p.publish_at)}` : '공개');
+    const statusCls = !p.published ? '' : (scheduled ? 'scheduled' : 'published');
+    return `
     <div class="admin-row" data-id="${p.id}">
       <div>
-        <span class="status ${p.published ? 'published' : ''}">${p.published ? '공개' : '비공개'}</span>
+        <span class="status ${statusCls}">${statusText}</span>
         <span class="title">${p.title}</span>
         <div class="mono" style="margin-top:4px;color:var(--ink-soft)">
           ${formatDate(p.created_at)}${p.category ? ' · ' + p.category : ''}${p.tags && p.tags.length ? ' · ' + p.tags.join(', ') : ''}
@@ -135,11 +145,12 @@ export function renderAdminList(posts, container, { onChange, onEdit }) {
       </div>
       <div class="actions">
         <button class="btn secondary" data-action="edit">수정</button>
-        <button class="btn secondary" data-action="toggle">${p.published ? '비공개로' : '공개로'}</button>
+        <button class="btn secondary" data-action="toggle">${p.published ? '임시저장으로' : '공개로'}</button>
         <button class="btn danger" data-action="delete">삭제</button>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   container.querySelectorAll('.admin-row').forEach(row => {
     const id = row.dataset.id;

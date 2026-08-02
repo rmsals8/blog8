@@ -222,6 +222,7 @@ img{ max-width: 100%; display: block; }
 .field input[type=email],
 .field input[type=password],
 .field input[type=file],
+.field input[type=datetime-local],
 .field textarea{
   width: 100%;
   border: 1px solid var(--line);
@@ -336,6 +337,7 @@ img{ max-width: 100%; display: block; }
   color: var(--ink-soft);
 }
 .status.published{ color: var(--moss-dark); border-color: var(--moss); }
+.status.scheduled{ color: var(--clay); border-color: var(--clay); }
 
 .toast{
   position: fixed;

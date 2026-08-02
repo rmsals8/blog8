@@ -71,10 +71,17 @@
           <div class="hint">본문 안 이미지를 클릭하면 크기를 조절할 수 있습니다.</div>
         </div>
         <div class="field">
-          <label><input type="checkbox" id="published" checked style="width:auto;display:inline-block;margin-right:6px;"> 즉시 공개</label>
+          <label><input type="checkbox" id="published" checked style="width:auto;display:inline-block;margin-right:6px;"> 공개</label>
+          <div class="hint">체크 해제하면 임시저장 상태로 저장됩니다 (목록에 안 보임, 나중에 이어서 작성 가능).</div>
+        </div>
+        <div class="field" id="schedule-field">
+          <label for="publish_at">예약 발행 시각 (선택)</label>
+          <input type="datetime-local" id="publish_at">
+          <div class="hint">지정하면 그 시각이 될 때까지 "공개" 상태여도 홈 화면·글 목록에 노출되지 않습니다. 비워두면 즉시 공개됩니다.</div>
         </div>
         <div style="display:flex;gap:10px;">
           <button type="submit" class="btn" id="submit-btn">발행하기</button>
+          <button type="button" class="btn secondary" id="draft-btn">임시저장</button>
           <button type="button" class="btn secondary" id="cancel-edit-btn" style="display:none;">취소</button>
         </div>
       </form>
@@ -218,12 +225,20 @@
       let editingCoverUrl = null;
       const cancelEditBtn = document.getElementById('cancel-edit-btn');
 
+      function isoToLocalInput(iso) {
+        if (!iso) return '';
+        const d = new Date(iso);
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      }
+
       function exitEditMode() {
         editingId = null;
         editingCoverUrl = null;
         form.reset();
         contentEl.innerHTML = '';
         document.getElementById('published').checked = true;
+        document.getElementById('publish_at').value = '';
         document.getElementById('submit-btn').textContent = '발행하기';
         cancelEditBtn.style.display = 'none';
       }
@@ -237,6 +252,7 @@
           document.getElementById('tags').value = (post.tags || []).join(', ');
           contentEl.innerHTML = post.content || '';
           document.getElementById('published').checked = !!post.published;
+          document.getElementById('publish_at').value = isoToLocalInput(post.publish_at);
           editingId = id;
           editingCoverUrl = post.cover_image || null;
           document.getElementById('submit-btn').textContent = '수정 완료';
@@ -248,6 +264,58 @@
       }
 
       cancelEditBtn.addEventListener('click', exitEditMode);
+
+      // ---- 임시저장: 공개 여부/예약시각과 무관하게 항상 published=false로 저장하고 편집 화면은 유지
+      document.getElementById('draft-btn').addEventListener('click', async () => {
+        const titleVal = document.getElementById('title').value.trim();
+        if (!titleVal) { toast('제목을 입력해야 임시저장할 수 있습니다', true); return; }
+        const btn = document.getElementById('draft-btn');
+        btn.disabled = true;
+        const prevText = btn.textContent;
+        btn.textContent = '저장 중...';
+        try {
+          const coverFile = document.getElementById('cover').files[0];
+          const tags = parseTags(document.getElementById('tags').value);
+          const category = document.getElementById('category').value.trim() || null;
+          if (editingId) {
+            const coverUrl = coverFile ? await uploadImage(coverFile) : editingCoverUrl;
+            if (coverFile) editingCoverUrl = coverUrl;
+            await updatePost(editingId, {
+              title: titleVal,
+              excerpt: document.getElementById('excerpt').value.trim(),
+              content: contentEl.innerHTML,
+              cover_image: coverUrl,
+              published: false,
+              tags,
+              category
+            });
+          } else {
+            const coverUrl = coverFile ? await uploadImage(coverFile) : null;
+            const created = await createPost({
+              title: titleVal,
+              excerpt: document.getElementById('excerpt').value.trim(),
+              content: contentEl.innerHTML,
+              coverUrl,
+              published: false,
+              tags,
+              category,
+              publishAt: null
+            });
+            editingId = created.id;
+            editingCoverUrl = coverUrl;
+            document.getElementById('submit-btn').textContent = '수정 완료';
+            cancelEditBtn.style.display = '';
+          }
+          document.getElementById('published').checked = false;
+          toast('임시저장했습니다');
+          reload();
+        } catch (err) {
+          toast(err.message, true);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = prevText;
+        }
+      });
 
       // ---- rich text toolbar ----
       const contentEl = document.getElementById('content');
@@ -400,6 +468,8 @@
           const coverFile = document.getElementById('cover').files[0];
           const tags = parseTags(document.getElementById('tags').value);
           const category = document.getElementById('category').value.trim() || null;
+          const publishAtVal = document.getElementById('publish_at').value;
+          const publishAtIso = publishAtVal ? new Date(publishAtVal).toISOString() : null;
           if (editingId) {
             const coverUrl = coverFile ? await uploadImage(coverFile) : editingCoverUrl;
             await updatePost(editingId, {
@@ -409,9 +479,10 @@
               cover_image: coverUrl,
               published: document.getElementById('published').checked,
               tags,
-              category
+              category,
+              publish_at: publishAtIso
             });
-            toast('수정했습니다');
+            toast(publishAtIso && new Date(publishAtIso) > new Date() ? '예약 발행으로 수정했습니다' : '수정했습니다');
             exitEditMode();
           } else {
             const coverUrl = coverFile ? await uploadImage(coverFile) : null;
@@ -422,12 +493,14 @@
               coverUrl,
               published: document.getElementById('published').checked,
               tags,
-              category
+              category,
+              publishAt: publishAtIso
             });
-            toast('발행했습니다');
+            toast(publishAtIso && new Date(publishAtIso) > new Date() ? '예약 발행으로 등록했습니다' : '발행했습니다');
             form.reset();
             contentEl.innerHTML = '';
             document.getElementById('published').checked = true;
+            document.getElementById('publish_at').value = '';
           }
           reload();
         } catch (err) {
