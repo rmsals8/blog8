@@ -83,6 +83,16 @@ function collectStoragePaths(post) {
   return [...new Set(paths)];
 }
 
+// 특정 카테고리에 속한 글을 모두 삭제(카테고리 삭제 기능에서 사용) — 각 글의 Storage 파일도 deletePost를 통해 함께 정리된다.
+export async function deletePostsByCategory(category) {
+  const { data, error } = await supabase.from('posts').select('id').eq('category', category);
+  if (error) throw error;
+  for (const row of data) {
+    await deletePost(row.id);
+  }
+  return data.length;
+}
+
 export async function deletePost(id) {
   // 삭제 전에 본문을 읽어 딸린 Storage 파일 경로(대표이미지·본문이미지·첨부파일)를 먼저 파악
   let paths = [];

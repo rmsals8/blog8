@@ -46,7 +46,7 @@ img{ max-width: 100%; display: block; }
 ::selection{ background: var(--moss); color: var(--paper); }
 
 .mono{
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -100,12 +100,20 @@ img{ max-width: 100%; display: block; }
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
   margin-bottom: 64px;
-  gap: 24px;
+  gap: 16px 24px;
+}
+.topbar-left{
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 .topbar nav{ display: flex; gap: 24px; }
 .topbar nav a{
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
+  font-weight: 500;
   font-size: 0.78rem;
   letter-spacing: 0.04em;
   color: var(--ink-soft);
@@ -117,6 +125,35 @@ img{ max-width: 100%; display: block; }
   color: var(--ink);
   border-color: var(--moss);
 }
+
+/* ---------- session timer (관리자 페이지 전용) ---------- */
+.session-info{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--paper-raised);
+}
+.session-info .mono{
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+}
+.session-extend-btn{
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  border: 1px solid var(--moss);
+  background: transparent;
+  color: var(--moss-dark);
+  padding: 4px 12px;
+  border-radius: 20px;
+  transition: background .15s ease, color .15s ease;
+}
+.session-extend-btn:hover{ background: var(--moss); color: var(--paper); }
+.session-extend-btn:disabled{ opacity: 0.5; cursor: not-allowed; }
 
 /* ---------- hero ---------- */
 .hero{ max-width: 640px; margin-bottom: 72px; }
@@ -208,7 +245,11 @@ img{ max-width: 100%; display: block; }
   border-radius: var(--radius);
   padding: 36px;
 }
+/* 글쓰기 폼은 본문 에디터가 더 넓게 쓸 수 있도록 박스 자체를 넓히고,
+   제목/요약/카테고리 등 다른 필드는 .field-narrow로 기존 너비를 유지한다. */
+#post-form.panel{ max-width: 900px; }
 .field{ margin-bottom: 20px; }
+.field-narrow{ max-width: 560px; }
 .field label{
   display: block;
   font-family: 'JetBrains Mono', monospace;
@@ -539,7 +580,7 @@ footer.site-footer{
 
 .category-badge{
   display: inline-block;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
   font-size: 0.68rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;

@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>관리자 · blog8</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -16,7 +19,13 @@
 
     <main class="main">
       <div class="topbar">
-        <div class="mono">관리자</div>
+        <div class="topbar-left">
+          <div class="mono">관리자</div>
+          <div class="session-info">
+            <span class="mono" id="session-timer">세션 확인 중...</span>
+            <button type="button" class="session-extend-btn" id="extend-session-btn">세션 연장</button>
+          </div>
+        </div>
         <nav>
           <a href="index.html">글 보기</a>
           <a href="#settings">블로그 설정</a>
@@ -30,25 +39,25 @@
       </section>
 
       <form id="post-form" class="panel" style="margin-bottom:64px;">
-        <div class="field">
+        <div class="field field-narrow">
           <label for="title">제목</label>
           <input type="text" id="title" required>
         </div>
-        <div class="field">
+        <div class="field field-narrow">
           <label for="excerpt">요약 (목록에 표시)</label>
           <input type="text" id="excerpt" maxlength="140">
         </div>
-        <div class="field">
+        <div class="field field-narrow">
           <label for="category">카테고리 (단일 선택, 홈화면 뱃지로 표시)</label>
           <input type="text" id="category" list="category-list" placeholder="예: Travel">
           <datalist id="category-list"></datalist>
           <div class="hint">비워두면 뱃지가 표시되지 않습니다. 기존에 쓴 카테고리는 목록에서 자동 제안됩니다.</div>
         </div>
-        <div class="field">
+        <div class="field field-narrow">
           <label for="tags">태그 (쉼표로 구분, 최대 10개)</label>
           <input type="text" id="tags" placeholder="예: 일상, 개발, 회고">
         </div>
-        <div class="field">
+        <div class="field field-narrow">
           <label for="cover">대표 이미지</label>
           <input type="file" id="cover" accept="image/*">
           <div class="hint">비워두면 대표 이미지 없이 발행됩니다. 업로드 시 자동 압축됩니다.</div>
@@ -70,11 +79,11 @@
           <div class="editor-content" id="content" contenteditable="true" data-placeholder="본문을 입력하세요..."></div>
           <div class="hint">본문 안 이미지를 클릭하면 크기를 조절할 수 있습니다.</div>
         </div>
-        <div class="field">
+        <div class="field field-narrow">
           <label><input type="checkbox" id="published" checked style="width:auto;display:inline-block;margin-right:6px;"> 공개</label>
           <div class="hint">체크 해제하면 임시저장 상태로 저장됩니다 (목록에 안 보임, 나중에 이어서 작성 가능).</div>
         </div>
-        <div class="field" id="schedule-field">
+        <div class="field field-narrow" id="schedule-field">
           <label for="publish_at">예약 발행 시각 (선택)</label>
           <input type="datetime-local" id="publish_at">
           <div class="hint">지정하면 그 시각이 될 때까지 "공개" 상태여도 홈 화면·글 목록에 노출되지 않습니다. 비워두면 즉시 공개됩니다.</div>
@@ -89,6 +98,12 @@
       <section style="margin-bottom:72px;">
         <h1 style="font-size:1.4rem;margin-bottom:8px;">작성한 글</h1>
         <div id="admin-list"><div class="empty-state">불러오는 중...</div></div>
+      </section>
+
+      <section style="margin-bottom:72px;">
+        <h1 style="font-size:1.4rem;margin-bottom:8px;">카테고리 관리</h1>
+        <p class="hint" style="margin-bottom:20px;">카테고리를 삭제하면 해당 카테고리에 속한 글이 모두 함께 삭제됩니다.</p>
+        <div id="category-manager"><div class="empty-state">불러오는 중...</div></div>
       </section>
 
       <section id="settings" style="margin-bottom:72px;">
@@ -146,8 +161,8 @@
   </div>
 
   <script type="module">
-    import { requireAuth, logout } from './js/auth.js';
-    import { uploadImage, uploadAttachment, createPost, updatePost, fetchAllPostsForAdmin, fetchPostById, renderAdminList, parseTags } from './js/editor.js';
+    import { requireAuth, logout, extendSession, watchSession, getSessionExpiry } from './js/auth.js';
+    import { uploadImage, uploadAttachment, createPost, updatePost, deletePostsByCategory, fetchAllPostsForAdmin, fetchPostById, renderAdminList, parseTags } from './js/editor.js';
     import { toast, getSettings, saveSettings, applyFavicon, CONNECTION_INFO, BUCKET_NAME } from './js/api.js';
 
     const session = await requireAuth();
@@ -155,6 +170,37 @@
       document.getElementById('logout-link').addEventListener('click', (e) => {
         e.preventDefault();
         logout();
+      });
+
+      // ---- 세션 만료 카운트다운 + 연장 버튼 ----
+      const sessionTimerEl = document.getElementById('session-timer');
+      const extendBtn = document.getElementById('extend-session-btn');
+      function formatRemaining(ms) {
+        const totalSec = Math.max(0, Math.floor(ms / 1000));
+        const m = Math.floor(totalSec / 60);
+        const s = totalSec % 60;
+        return `${m}:${String(s).padStart(2, '0')}`;
+      }
+      function updateSessionTimer(remainingMs) {
+        sessionTimerEl.textContent = `자동 로그아웃까지 ${formatRemaining(remainingMs)}`;
+      }
+      const initialExpiry = getSessionExpiry();
+      if (initialExpiry) updateSessionTimer(initialExpiry - Date.now());
+      watchSession(updateSessionTimer, () => {
+        toast('세션이 만료되어 자동 로그아웃됩니다', true);
+        logout();
+      });
+      extendBtn.addEventListener('click', async () => {
+        extendBtn.disabled = true;
+        try {
+          const newExpiry = await extendSession();
+          updateSessionTimer(newExpiry - Date.now());
+          toast('세션을 30분 연장했습니다');
+        } catch (err) {
+          toast(err.message, true);
+        } finally {
+          extendBtn.disabled = false;
+        }
       });
 
       // ---- connection info (read-only display) ----
@@ -207,12 +253,54 @@
       // ---- post list ----
       const listEl = document.getElementById('admin-list');
       const categoryListEl = document.getElementById('category-list');
+      const categoryManagerEl = document.getElementById('category-manager');
+
+      function renderCategoryManager(posts) {
+        const counts = new Map();
+        posts.forEach(p => {
+          if (!p.category) return;
+          counts.set(p.category, (counts.get(p.category) || 0) + 1);
+        });
+        if (!counts.size) {
+          categoryManagerEl.innerHTML = `<div class="empty-state">아직 카테고리가 없습니다.</div>`;
+          return;
+        }
+        categoryManagerEl.innerHTML = [...counts.entries()].map(([category, count]) => `
+          <div class="admin-row" data-category="${category}">
+            <div>
+              <span class="title">${category}</span>
+              <div class="mono" style="margin-top:4px;color:var(--ink-soft)">글 ${count}개</div>
+            </div>
+            <div class="actions">
+              <button class="btn danger" data-action="delete-category">삭제</button>
+            </div>
+          </div>
+        `).join('');
+        categoryManagerEl.querySelectorAll('[data-action=delete-category]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const row = btn.closest('.admin-row');
+            const category = row.dataset.category;
+            if (!confirm(`"${category}" 카테고리를 삭제하시겠습니까? 이 카테고리의 글이 모두 함께 삭제되며 되돌릴 수 없습니다.`)) return;
+            btn.disabled = true;
+            try {
+              await deletePostsByCategory(category);
+              toast('카테고리와 소속 글을 삭제했습니다');
+              reload();
+            } catch (err) {
+              toast(err.message, true);
+              btn.disabled = false;
+            }
+          });
+        });
+      }
+
       async function reload() {
         try {
           const posts = await fetchAllPostsForAdmin();
           renderAdminList(posts, listEl, { onChange: reload, onEdit: startEdit });
           const categories = [...new Set(posts.map(p => p.category).filter(Boolean))];
           categoryListEl.innerHTML = categories.map(c => `<option value="${c}"></option>`).join('');
+          renderCategoryManager(posts);
         } catch (err) {
           listEl.innerHTML = `<div class="empty-state">목록을 불러오지 못했습니다.</div>`;
           toast(err.message, true);
@@ -319,23 +407,61 @@
 
       // ---- rich text toolbar ----
       const contentEl = document.getElementById('content');
+
+      // 이미지/파일 업로드는 비동기로 진행되며 그 사이에 파일 선택 창이 띄우면서
+      // 본문 에디터의 커서/선택이 유실된다. 선택을 유실한 상태에서 insertImage를 실행하면
+      // 브라우저가 직전에 삽입된 이미지를 선택된 것으로 처리해 그 자리를 덮어쓰는 버그가 생긴다
+      // (이미지 2개 이상 올리면 1개로 덮어쓰이는 현상). 선택 범위를 직접 저장해두었다가
+      // 삽입 직전에 복원하여 이 문제를 막는다.
+      let savedRange = null;
+      function saveSelectionIfInside() {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0 && contentEl.contains(sel.anchorNode)) {
+          savedRange = sel.getRangeAt(0).cloneRange();
+        }
+      }
+      document.addEventListener('selectionchange', saveSelectionIfInside);
+
+      function restoreSelection() {
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        if (savedRange && contentEl.contains(savedRange.commonAncestorContainer)) {
+          sel.addRange(savedRange);
+        } else {
+          // 저장된 위치가 없으면 본문 끝으로 커서를 보낸다
+          const range = document.createRange();
+          range.selectNodeContents(contentEl);
+          range.collapse(false);
+          sel.addRange(range);
+          savedRange = range.cloneRange();
+        }
+      }
+
       document.querySelectorAll('.editor-toolbar [data-cmd]').forEach(btn => {
         btn.addEventListener('click', () => {
+          contentEl.focus();
+          restoreSelection();
           const cmd = btn.dataset.cmd;
           if (cmd === 'formatBlock') {
             document.execCommand(cmd, false, `<${btn.dataset.value}>`);
           } else {
             document.execCommand(cmd, false, null);
           }
-          contentEl.focus();
+          saveSelectionIfInside();
         });
       });
       document.getElementById('editor-link-btn').addEventListener('click', () => {
         const url = prompt('링크 주소를 입력하세요 (https://...)');
-        if (url) document.execCommand('createLink', false, url);
+        if (url) {
+          contentEl.focus();
+          restoreSelection();
+          document.execCommand('createLink', false, url);
+          saveSelectionIfInside();
+        }
         contentEl.focus();
       });
       document.getElementById('editor-img-btn').addEventListener('click', () => {
+        saveSelectionIfInside();
         document.getElementById('editor-img-input').click();
       });
       document.getElementById('editor-img-input').addEventListener('change', async (e) => {
@@ -345,7 +471,10 @@
         toast('이미지 업로드 중...');
         try {
           const url = await uploadImage(file);
+          contentEl.focus();
+          restoreSelection();
           document.execCommand('insertImage', false, url);
+          saveSelectionIfInside();
           contentEl.focus();
         } catch (err) {
           toast(err.message, true);
@@ -354,6 +483,7 @@
 
       // ---- 파일(PDF 등) 첨부 ----
       document.getElementById('editor-file-btn').addEventListener('click', () => {
+        saveSelectionIfInside();
         document.getElementById('editor-file-input').click();
       });
       document.getElementById('editor-file-input').addEventListener('change', async (e) => {
@@ -363,7 +493,10 @@
         toast('파일 업로드 중...');
         try {
           const { url, name } = await uploadAttachment(file);
+          contentEl.focus();
+          restoreSelection();
           document.execCommand('insertHTML', false, `<a href="${url}" target="_blank">📎 ${name}</a>`);
+          saveSelectionIfInside();
           contentEl.focus();
           toast('첨부되었습니다');
         } catch (err) {
