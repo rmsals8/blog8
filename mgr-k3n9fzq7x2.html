@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -49,9 +50,14 @@
         </div>
         <div class="field field-narrow">
           <label for="category">카테고리 (단일 선택, 홈화면 뱃지로 표시)</label>
-          <input type="text" id="category" list="category-list" placeholder="예: Travel">
-          <datalist id="category-list"></datalist>
-          <div class="hint">비워두면 뱃지가 표시되지 않습니다. 기존에 쓴 카테고리는 목록에서 자동 제안됩니다.</div>
+          <div class="category-picker">
+            <input type="text" id="category" list="category-list" placeholder="직접 입력하거나 오른쪽 화살표를 누르세요 (예: Travel)">
+            <button type="button" class="category-picker-toggle" id="category-picker-toggle" title="기존 카테고리에서 선택">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <datalist id="category-list"></datalist>
+          </div>
+          <div class="hint">직접 타이핑해서 새 카테고리를 만들거나, 화살표 버튼을 누르면 기존에 쓴 카테고리 중에서 골라 쓸 수 있습니다. 비워두면 뱃지가 표시되지 않습니다.</div>
         </div>
         <div class="field field-narrow">
           <label for="tags">태그 (쉼표로 구분, 최대 10개)</label>
@@ -170,6 +176,15 @@
       document.getElementById('logout-link').addEventListener('click', (e) => {
         e.preventDefault();
         logout();
+      });
+
+      // ---- 카테고리 화살표: 누르면 기존 카테고리 목록(datalist)을 띄운다 ----
+      const categoryInput = document.getElementById('category');
+      document.getElementById('category-picker-toggle').addEventListener('click', () => {
+        categoryInput.focus();
+        if (typeof categoryInput.showPicker === 'function') {
+          try { categoryInput.showPicker(); return; } catch {}
+        }
       });
 
       // ---- 세션 만료 카운트다운 + 연장 버튼 ----

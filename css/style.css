@@ -3,11 +3,14 @@
    Palette:  paper #EFEDE6 · ink #21201C · moss #4B5D45 · clay #8B6F47
              line #D8D4C8 · danger #A23B33
    Type:     Fraunces (display) · Inter (body) · JetBrains Mono (meta)
+             · Pretendard (한글 폴백 — Plus Jakarta Sans/Inter/JetBrains Mono는
+               한글 글리프가 없어서 한글은 이 폰트가 항상 실제로 렌더링됨)
    Signature: rotated "spine" title fixed to the left edge, echoed as a
               small monospace date-tab on every card and article.
 =================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css');
 
 :root{
   --paper: #FCFBFA;
@@ -28,13 +31,13 @@ body{
   margin: 0;
   background: var(--paper);
   color: var(--ink);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Pretendard', sans-serif;
   font-size: 16px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 h1,h2,h3{
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Pretendard', sans-serif;
   font-weight: 700;
   line-height: 1.15;
   margin: 0;
@@ -46,7 +49,7 @@ img{ max-width: 100%; display: block; }
 ::selection{ background: var(--moss); color: var(--paper); }
 
 .mono{
-  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
+  font-family: 'JetBrains Mono', 'Pretendard', ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -75,7 +78,7 @@ img{ max-width: 100%; display: block; }
 .spine a{
   writing-mode: vertical-rl;
   transform: rotate(180deg);
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Pretendard', sans-serif;
   font-style: normal;
   font-weight: 700;
   font-size: 1.1rem;
@@ -112,7 +115,7 @@ img{ max-width: 100%; display: block; }
 }
 .topbar nav{ display: flex; gap: 24px; }
 .topbar nav a{
-  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
+  font-family: 'JetBrains Mono', 'Pretendard', ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
   font-weight: 500;
   font-size: 0.78rem;
   letter-spacing: 0.04em;
@@ -141,7 +144,7 @@ img{ max-width: 100%; display: block; }
   font-size: 0.7rem;
 }
 .session-extend-btn{
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Pretendard', sans-serif;
   font-weight: 600;
   font-size: 0.72rem;
   letter-spacing: 0.02em;
@@ -252,7 +255,7 @@ img{ max-width: 100%; display: block; }
 .field-narrow{ max-width: 560px; }
 .field label{
   display: block;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Pretendard', monospace;
   font-size: 0.72rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -270,15 +273,33 @@ img{ max-width: 100%; display: block; }
   background: var(--paper);
   border-radius: var(--radius);
   padding: 11px 13px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Pretendard', sans-serif;
   font-size: 0.95rem;
   color: var(--ink);
 }
-.field textarea{ min-height: 320px; resize: vertical; font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; line-height: 1.6; }
+.field textarea{ min-height: 320px; resize: vertical; font-family: 'JetBrains Mono', 'Pretendard', monospace; font-size: 0.88rem; line-height: 1.6; }
 .field input:focus, .field textarea:focus{
   outline: none;
   border-color: var(--moss);
 }
+
+/* ---------- 카테고리 입력: 직접 타이핑도 되고, 화살표를 누르면 기존
+   카테고리 목록(datalist)에서 골라 쓸 수도 있다 ---------- */
+.category-picker{ position: relative; }
+.category-picker input{ padding-right: 34px; }
+.category-picker-toggle{
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+}
+.category-picker-toggle:hover{ color: var(--ink); }
+.category-picker-toggle svg{ width: 14px; height: 14px; }
 
 /* ---------- rich text editor ---------- */
 .editor-toolbar{
@@ -333,7 +354,7 @@ img{ max-width: 100%; display: block; }
 }
 .info-row:last-child{ border-bottom: 1px solid var(--line); }
 .info-row .k{ color: var(--ink-soft); flex: none; }
-.info-row .v{ font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; text-align: right; word-break: break-all; }
+.info-row .v{ font-family: 'JetBrains Mono', 'Pretendard', monospace; font-size: 0.82rem; text-align: right; word-break: break-all; }
 .hint{ font-size: 0.82rem; color: var(--ink-soft); margin-top: 6px; }
 
 .btn{
@@ -370,7 +391,7 @@ img{ max-width: 100%; display: block; }
 .admin-row .title{ font-weight: 500; }
 .admin-row .actions{ display: flex; gap: 10px; flex: none; }
 .status{
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Pretendard', monospace;
   font-size: 0.68rem;
   padding: 2px 8px;
   border-radius: 20px;
@@ -429,7 +450,7 @@ footer.site-footer{
   padding: 32px clamp(20px, 5vw, 48px) 0;
 }
 .site-header .brand{
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Pretendard', sans-serif;
   font-weight: 700;
   font-size: 1.15rem;
   color: var(--ink);
@@ -451,7 +472,7 @@ footer.site-footer{
   background: none;
   border: none;
   color: var(--ink-soft);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Pretendard', sans-serif;
   font-size: 0.88rem;
   padding: 6px;
 }
@@ -469,7 +490,7 @@ footer.site-footer{
   background: var(--paper-raised);
   border-radius: var(--radius);
   padding: 12px 14px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Pretendard', sans-serif;
   font-size: 0.95rem;
   color: var(--ink);
 }
@@ -530,14 +551,14 @@ footer.site-footer{
   background: var(--paper-raised);
   border: 1px solid var(--line);
   display: flex; align-items: center; justify-content: center;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Pretendard', monospace;
   font-size: 0.72rem;
   color: var(--ink-soft);
   margin-top: 2px;
 }
 .top-story .body{ flex: 1; min-width: 0; }
 .top-story .body h4{
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Pretendard', sans-serif;
   font-weight: 600;
   font-size: 0.95rem;
   line-height: 1.3;
@@ -580,7 +601,7 @@ footer.site-footer{
 
 .category-badge{
   display: inline-block;
-  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
+  font-family: 'JetBrains Mono', 'Pretendard', ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
   font-size: 0.68rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -597,7 +618,7 @@ footer.site-footer{
   margin-bottom: 24px;
 }
 .results-heading a{
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Pretendard', monospace;
   font-size: 0.76rem;
   color: var(--ink-soft);
   border-bottom: 1px solid var(--line);
