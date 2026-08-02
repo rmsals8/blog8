@@ -33,7 +33,7 @@ using ( auth.role() = 'authenticated' )
 with check ( auth.role() = 'authenticated' );
 ```
 
-글에 태그를 저장하려면 `posts` 테이블에 컴럼을 하나 추가하세요 (이미 만들어둔 테이블이 있다면 이 한 줄만 실행하면 됩니다):
+글에 태그를 저장하려면 `posts` 테이블에 컬럼을 하나 추가하세요 (이미 만들어둔 테이블이 있다면 이 한 줄만 실행하면 됩니다):
 
 ```sql
 alter table posts add column if not exists tags text[] not null default '{}';
@@ -95,10 +95,18 @@ on storage.objects for delete
 using ( bucket_id = 'post-images' and auth.role() = 'authenticated' );
 ```
 
+## 2-1. 첨부파일(PDF 등) 허용하기
+
+기본은 이미지 형식만 허용되어 있어서, PDF나 다른 파일을 첨부하려면 **Storage > post-images 버킷 > 설정(연필 아이콘/Edit bucket)**에서:
+- **Restrict MIME types**에 `application/pdf` 추가 (필요한 다른 형식도 같이 추가 가능)
+- **Restrict file size**를 원하는 용량으로 높임 (예: 20MB) 또는 제한 해제
+
+이 설정을 바꿔야 관리자 에디터의 📎 첨부 버튼이 업로드에 성공합니다 (버킷 설정이 막고 있으면 업로드 시 에러가 납니다).
+
 ## 3. 관리자 계정 만들기
 
 **Authentication > Users > Add user** 에서 이메일/비밀번호로 계정을 하나 만드세요.
-(이 사이트에는 회원가입 기능이 없습니다 — 오직 이 계정으로만 admin.html에 로그인 가능)
+(이 사이트에는 회원가입 기능이 없습니다 — 오직 이 계정으로만 관리자 페이지에 로그인 가능)
 
 ## 4. 코드에 프로젝트 정보 연결
 
@@ -110,7 +118,7 @@ const SUPABASE_ANON_KEY = 'YOUR_ANON_PUBLIC_KEY';
 ```
 
 두 값 모두 Supabase 대시보드 **Project Settings > API** 에서 확인합니다.
-(DB 비밀번호나 psql 연결 URI는 이 파일에 절대 넣지 않습니다 — 필요 없습니다.)
+(DB 비밀번호나 psql 연결 URI, service_role key는 이 파일에 절대 넣지 않습니다 — 필요 없습니다.)
 
 ## 5. 배포 (cloudtype.io)
 
@@ -122,18 +130,19 @@ const SUPABASE_ANON_KEY = 'YOUR_ANON_PUBLIC_KEY';
 
 ```
 blog8/
- ├── index.html      글 목록
- ├── post.html        글 상세
- ├── admin.html        글 작성/관리 (로그인 필요, 메뉴에 노출되지 않음)
- ├── login.html        관리자 로그인 (메뉴에 노출되지 않음)
- ├── 404.html          없는 경로 접속 시 홈으로 이동
+ ├── index.html               글 목록
+ ├── post.html                 글 상세
+ ├── mgr-k3n9fzq7x2.html        글 작성/관리 (로그인 필요, 메뉴에 노출되지 않음)
+ ├── gate-8h4mzp1w6s.html       관리자 로그인 (메뉴에 노출되지 않음)
+ ├── 404.html                   없는 경로 접속 시 홈으로 이동 (현재 자동 적용 안 됨 — 7번 참고)
+ ├── robots.txt
  ├── sitemap.xml
  ├── css/style.css
  └── js/
       api.js       Supabase 클라이언트, 설정 로드/저장, 이미지 압축, 파비콘 적용
       auth.js      로그인/로그아웃/세션 확인
       posts.js     공개 글 목록·상세 조회, HTML 정제
-      editor.js    글 작성·수정·삭제, 이미지 업로드
+      editor.js    글 작성·수정·삭제, 이미지/첨부파일 업로드
       seo.js       글 상세 페이지 메타태그
 ```
 
@@ -141,43 +150,51 @@ blog8/
 
 | 기능 | 내용 |
 |---|---|
-| 글 작성 | 제목, 요약, 대표 이미지, 리치 텍스트 본문(굵게·기울임·제목·목록·링크·이미지), 공개 여부 |
-| 글 관리 | 전체 글 목록, 공개/비공개 전환, 삭제 |
-| 이미지 업로드 | 업로드 전 브라우저에서 자동 리사이즈(최대 1600px)·압축(JPEG 82%) 후 Storage 저장 |
+| 글 작성 | 제목, 요약, 태그, 대표 이미지, 리치 텍스트 본문(굵게·기울임·제목·목록·링크·이미지·첨부파일), 공개 여부 |
+| 글 관리 | 전체 글 목록, 수정, 공개/비공개 전환, 삭제 |
+| 이미지 업로드 | 업로드 전 브라우저에서 자동 리사이즈(최대 1600px)·압축(JPEG 82%) 후 Storage 저장. 본문 이미지는 클릭해서 25%/50%/75%/원본 크기 조절 가능 |
+| 첨부파일 | PDF 등 이미지가 아닌 파일을 압축 없이 원본 그대로 첨부 (버킷 설정에서 MIME 타입/용량 제한 완화 필요 — 2-1번 참고) |
 | 블로그 설정 | 블로그 이름, 소개 문구, 푸터 문구, 파비콘 — 저장 즉시 전체 페이지에 반영 |
 | 연결 정보 확인 | 현재 연결된 Supabase URL, 이미지 버킷 이름 읽기 전용 표시 |
-| 인증 | Supabase Auth 로그인/로그아웃, 로그인 안 된 상태로 admin.html 접근 시 자동으로 login.html로 이동 |
+| 인증 | Supabase Auth 로그인/로그아웃, 로그인 안 된 상태로 관리자 페이지 접근 시 자동으로 로그인 페이지로 이동 |
 
 없는 기능(필요하면 말씀해주세요): 댓글, 검색, 여러 관리자 계정.
 
-글 수정과 태그는 추가되었습니다 — 관리자 페이지 목록에서 「수정」 버튼을 누르면 글상단에 내용이 불러와지고, 글 작성 폼에도 태그 입력란이 생겼습니다.
+## 7. 관리자 페이지 숨기기 / 접근 방법
 
-## 7. 관리자 페이지 숨기기
+`admin.html`, `login.html`이라는 이름은 공격자가 추측하기 너무 쉬워서, 아래 이름으로 변경했습니다:
 
-`admin.html`, `login.html`은 `index.html`/`post.html` 어디에도 링크되어 있지 않고,
-`<meta name="robots" content="noindex, nofollow">` 로 검색엔진 색인도 막아뒀습니다.
-정확한 주소를 직접 입력해야만 접근할 수 있고, 접근해도 로그인 안 된 상태면 `login.html`로 튕겨나갑니다.
+| 원래 이름 | 변경된 이름 |
+|---|---|
+| admin.html (글 작성/관리) | `mgr-k3n9fzq7x2.html` |
+| login.html (로그인) | `gate-8h4mzp1w6s.html` |
 
-더 감추고 싶다면:
-1. `admin.html` → 원하는 이름(예: `mgr-a91k.html`)으로 파일명 변경
-2. `login.html`도 원하는 이름으로 변경
-3. `js/auth.js` 안의 `login.html`, `admin.html` 문자열 두 곳을 바꾼 파일명으로 수정
+**접근 방법:** 배포된 도메인 뒤에 파일명을 그대로 붙이면 됩니다.
+예) `https://your-domain.com/gate-8h4mzp1w6s.html` 로 들어가서 로그인 →
+로그인에 성공하면 자동으로 `mgr-k3n9fzq7x2.html`(관리자 페이지)로 이동합니다.
+직접 `mgr-k3n9fzq7x2.html`로 들어가도, 로그인이 안 되어 있으면 자동으로 `gate-8h4mzp1w6s.html`로 튕겨나갑니다.
 
-(정적 호스팅이라 서버 라우팅으로 경로를 숨기는 대신, 파일명 자체를 추측하기 어렵게 바꾸는 방식입니다.)
+이 두 파일은 `index.html`/`post.html` 어디에도 링크되어 있지 않고, `<meta name="robots" content="noindex, nofollow">`와 `robots.txt`로 검색엔진 색인도 막아뒀습니다. 정확한 주소를 직접 입력해야만 접근할 수 있습니다.
+
+나중에 또 바꾸고 싶다면:
+1. 두 파일명을 원하는 이름으로 변경
+2. `js/auth.js` 안의 파일명 세 곳 수정
+3. `robots.txt`의 `Disallow` 두 줄도 새 이름으로 수정
+
+(정적 호스팅이라 서버 라우팅으로 경로를 숨기는 대신, 파일명 자체를 추측하기 어렵게 만드는 방식입니다. 파일명을 안다고 바로 뚫리는 건 아니고, 로그인 자체는 이메일/비밀번호로 별도 인증됩니다.)
+
+## 8. 없는 페이지 접속 시 홈으로 이동 (현재 미해결)
+
+`404.html`은 만들어 뒀지만, **cloudtype의 기본 "HTML" 프리셋은 대시보드에 커스텀 404 설정 옵션이 없어서** 이 파일이 자동으로 서빙되지 않습니다. Docker 배포로 바꾸면 nginx 설정으로 해결할 수 있지만, 요청하신 대로 Docker는 적용하지 않았습니다.
+지금은 이 문제를 그대로 두었습니다 — 알 수 없는 경로로 접속하면 cloudtype의 기본 nginx 404 화면이 뜹니다. (글 상세 페이지에서 존재하지 않는 글 slug로 들어온 경우는 이것과 별개로, `post.html` 자체의 JS가 정상 동작해서 홈으로 자동 이동합니다.)
 
 ## 8-1. 구글 검색 노출 관련
 
 다음이 추가되었습니다:
-- `robots.txt` — `admin.html`/`login.html`은 막고 나머지는 크롤링 허용, sitemap 위치 안내
+- `robots.txt` — 관리자/로그인 페이지는 막고 나머지는 크롤링 허용, sitemap 위치 안내
 - 각 글 상세 페이지에 canonical 태그, JSON-LD(BlogPosting) 구조화 데이터, Open Graph/Twitter 카드 메타태그 자동 삽입
 
 **직접 바꿔야 하는 것:** `robots.txt`와 `index.html`의 `YOUR_DOMAIN` 부분을 실제 도메인으로 교체하세요. 그 다음 구글 서치 콘솔(Search Console)에 `sitemap.xml` 주소를 제출하면 새 글이 검색엔진에 더 빨리 잡혀요.
-
-## 8. 없는 페이지 접속 시 홈으로 이동
-
-`404.html`을 만들어뒀습니다. cloudtype 등 호스팅 설정에서 **"404 / Not Found 페이지"를 `404.html`로 지정**해두면,
-등록되지 않은 임의의 주소로 접속했을 때 자동으로 홈(`index.html`)으로 이동합니다.
-글 상세 페이지(`post.html`)에서 존재하지 않는 글 주소로 들어온 경우도 동일하게 홈으로 자동 이동합니다.
 
 ## 9. 데이터베이스 정보(연결 키)는 어떻게 감추나요
 
@@ -194,6 +211,9 @@ blog8/
 
 즉 anon key가 노출돼도 공격자가 할 수 있는 건 "이미 공개로 설정한 글을 읽는 것"뿐이고,
 글을 쓰거나 지우려면 관리자 이메일/비밀번호로 실제 로그인해야 합니다.
+
+반면 **service_role key는 절대 노출되면 안 됩니다** — RLS를 완전히 무시하고 DB/스토리지 전체에 관리자 권한으로 접근하는 키라서, `js/api.js`에는 절대 넣지 않습니다.
+
 정말로 DB 비밀번호나 API 키 자체를 서버 뒤에 완전히 숨기고 싶다면 Cloudflare Workers 같은 아주 가벼운 서버리스 함수를 프록시로 하나 두는 방법이 있는데, "백엔드 서버 없이"라는 지금 방향과는 맞지 않아서 적용하지 않았습니다. 필요해지면 말씀해주세요.
 
 앞으로 "테이블 추가해줘" / "버킷 추가로 만들어줘" 라고 요청하시면

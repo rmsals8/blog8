@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /mgr-k3n9fzq7x2.html
+Disallow: /gate-8h4mzp1w6s.html
+
+Sitemap: https://YOUR_DOMAIN/sitemap.xml

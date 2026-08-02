@@ -51,7 +51,7 @@ export function renderTagChips(tags) {
 
 // 관리자 에디터가 만든 HTML을 허용된 태그/속성만 남기고 정제해서 렌더링
 const ALLOWED_TAGS = new Set(['P','B','STRONG','I','EM','H2','H3','A','IMG','BR','UL','OL','LI','DIV','SPAN']);
-const ALLOWED_ATTR = { A: ['href'], IMG: ['src', 'alt'] };
+const ALLOWED_ATTR = { A: ['href', 'target'], IMG: ['src', 'alt', 'width'] };
 
 export function sanitizeHtml(html = '') {
   const doc = new DOMParser().parseFromString(html, 'text/html');

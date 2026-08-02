@@ -15,6 +15,21 @@ export async function uploadImage(file) {
   return data.publicUrl;
 }
 
+// 이미지가 아닌 일반 파일(PDF 등) 첲부 업로드 — 압축 없이 원본 그대로 저장
+// 버킷의 "Restrict MIME types"에 원하는 파일 형식(예: application/pdf)을, "Restrict file size"에 원하는 용량을 대시보드에서 미리 허용해둔야 합니다.
+export async function uploadAttachment(file) {
+  if (!file) return null;
+  const ext = file.name.split('.').pop();
+  const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await supabase.storage.from(BUCKET_NAME).upload(path, file, {
+    cacheControl: '3600',
+    upsert: false
+  });
+  if (error) throw error;
+  const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(path);
+  return { url: data.publicUrl, name: file.name };
+}
+
 export function parseTags(raw = '') {
   return [...new Set(
     raw.split(',').map(t => t.trim()).filter(Boolean)

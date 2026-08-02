@@ -9,7 +9,7 @@ export async function login(email, password) {
 
 export async function logout() {
   await supabase.auth.signOut();
-  window.location.href = 'login.html';
+  window.location.href = 'gate-8h4mzp1w6s.html';
 }
 
 export async function getSession() {
@@ -17,17 +17,17 @@ export async function getSession() {
   return data.session;
 }
 
-// admin.html 최상단에서 호출: 로그인 안 되어 있으면 login.html로 보냄
+// mgr-k3n9fzq7x2.html 최상단에서 호출: 로그인 안 되어 있으면 gate-8h4mzp1w6s.html로 보냄
 export async function requireAuth() {
   const session = await getSession();
   if (!session) {
-    window.location.href = 'login.html';
+    window.location.href = 'gate-8h4mzp1w6s.html';
     return null;
   }
   return session;
 }
 
-// login.html 폼 바인딩
+// gate-8h4mzp1w6s.html 폼 바인딩
 export function bindLoginForm() {
   const form = document.querySelector('#login-form');
   if (!form) return;
@@ -40,7 +40,7 @@ export function bindLoginForm() {
     btn.textContent = '확인 중...';
     try {
       await login(email, password);
-      window.location.href = 'admin.html';
+      window.location.href = 'mgr-k3n9fzq7x2.html';
     } catch (err) {
       toast(err.message || '로그인에 실패했습니다', true);
       btn.disabled = false;

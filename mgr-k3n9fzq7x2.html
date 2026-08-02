@@ -58,8 +58,11 @@
             <button type="button" id="editor-link-btn" title="링크">🔗</button>
             <button type="button" id="editor-img-btn" title="이미지 삽입">🖼</button>
             <input type="file" id="editor-img-input" accept="image/*" hidden>
+            <button type="button" id="editor-file-btn" title="파일 첨부 (PDF 등)">📎</button>
+            <input type="file" id="editor-file-input" hidden>
           </div>
           <div class="editor-content" id="content" contenteditable="true" data-placeholder="본문을 입력하세요..."></div>
+          <div class="hint">본문 안 이미지를 클릭하면 크기를 조절할 수 있습니다.</div>
         </div>
         <div class="field">
           <label><input type="checkbox" id="published" checked style="width:auto;display:inline-block;margin-right:6px;"> 즉시 공개</label>
@@ -106,8 +109,8 @@
         <div class="panel" style="margin-bottom:24px;">
           <div class="info-row"><span class="k">Supabase URL</span><span class="v" id="conn-url">-</span></div>
           <div class="info-row"><span class="k">이미지 버킷</span><span class="v" id="conn-bucket">-</span></div>
-          <div class="info-row"><span class="k">관리자 페이지</span><span class="v">admin.html (메뉴에 노출되지 않음)</span></div>
-          <div class="info-row"><span class="k">로그인 페이지</span><span class="v">login.html</span></div>
+          <div class="info-row"><span class="k">관리자 페이지</span><span class="v">mgr-k3n9fzq7x2.html (메뉴에 노출되지 않음)</span></div>
+          <div class="info-row"><span class="k">로그인 페이지</span><span class="v">gate-8h4mzp1w6s.html</span></div>
         </div>
         <p class="hint">
           연결 정보(Supabase URL/키)는 보안상 이 화면에서 바로 수정할 수 없습니다.
@@ -131,7 +134,7 @@
 
   <script type="module">
     import { requireAuth, logout } from './js/auth.js';
-    import { uploadImage, createPost, updatePost, fetchAllPostsForAdmin, fetchPostById, renderAdminList, parseTags } from './js/editor.js';
+    import { uploadImage, uploadAttachment, createPost, updatePost, fetchAllPostsForAdmin, fetchPostById, renderAdminList, parseTags } from './js/editor.js';
     import { toast, getSettings, saveSettings, applyFavicon, CONNECTION_INFO, BUCKET_NAME } from './js/api.js';
 
     const session = await requireAuth();
@@ -270,6 +273,67 @@
           toast(err.message, true);
         }
       });
+
+      // ---- 파일(PDF 등) 첨부 ----
+      document.getElementById('editor-file-btn').addEventListener('click', () => {
+        document.getElementById('editor-file-input').click();
+      });
+      document.getElementById('editor-file-input').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        e.target.value = '';
+        if (!file) return;
+        toast('파일 업로드 중...');
+        try {
+          const { url, name } = await uploadAttachment(file);
+          document.execCommand('insertHTML', false, `<a href="${url}" target="_blank">📎 ${name}</a>`);
+          contentEl.focus();
+          toast('첨부되었습니다');
+        } catch (err) {
+          toast(err.message, true);
+        }
+      });
+
+      // ---- 본문 이미지 크기 조절 ----
+      let resizeToolbar = null;
+      let activeImg = null;
+
+      function hideResizeToolbar() {
+        if (resizeToolbar) { resizeToolbar.remove(); resizeToolbar = null; }
+        activeImg = null;
+      }
+
+      function showResizeToolbar(img) {
+        hideResizeToolbar();
+        activeImg = img;
+        const rect = img.getBoundingClientRect();
+        resizeToolbar = document.createElement('div');
+        resizeToolbar.style.cssText = `position:fixed;top:${rect.top - 40}px;left:${rect.left}px;z-index:60;display:flex;gap:4px;background:var(--ink);padding:5px;border-radius:4px;`;
+        [['25%', 0.25], ['50%', 0.5], ['75%', 0.75], ['원본', 1]].forEach(([label, ratio]) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.textContent = label;
+          b.style.cssText = 'font-size:0.72rem;padding:4px 8px;border:none;border-radius:3px;background:var(--paper);color:var(--ink);cursor:pointer;';
+          b.addEventListener('click', (ev) => {
+            ev.preventDefault();
+            const naturalWidth = img.naturalWidth || img.width;
+            img.setAttribute('width', Math.round(naturalWidth * ratio));
+            img.style.width = '';
+            hideResizeToolbar();
+            contentEl.focus();
+          });
+          resizeToolbar.appendChild(b);
+        });
+        document.body.appendChild(resizeToolbar);
+      }
+
+      contentEl.addEventListener('click', (e) => {
+        if (e.target.tagName === 'IMG') {
+          showResizeToolbar(e.target);
+        } else {
+          hideResizeToolbar();
+        }
+      });
+      document.addEventListener('scroll', hideResizeToolbar, true);
 
       // ---- post form submit ----
       const form = document.getElementById('post-form');
