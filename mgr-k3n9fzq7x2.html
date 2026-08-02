@@ -39,6 +39,12 @@
           <input type="text" id="excerpt" maxlength="140">
         </div>
         <div class="field">
+          <label for="category">카테고리 (단일 선택, 홈화면 뱃지로 표시)</label>
+          <input type="text" id="category" list="category-list" placeholder="예: Travel">
+          <datalist id="category-list"></datalist>
+          <div class="hint">비워두면 뱃지가 표시되지 않습니다. 기존에 쓴 카테고리는 목록에서 자동 제안됩니다.</div>
+        </div>
+        <div class="field">
           <label for="tags">태그 (쉼표로 구분, 최대 10개)</label>
           <input type="text" id="tags" placeholder="예: 일상, 개발, 회고">
         </div>
@@ -193,10 +199,13 @@
 
       // ---- post list ----
       const listEl = document.getElementById('admin-list');
+      const categoryListEl = document.getElementById('category-list');
       async function reload() {
         try {
           const posts = await fetchAllPostsForAdmin();
           renderAdminList(posts, listEl, { onChange: reload, onEdit: startEdit });
+          const categories = [...new Set(posts.map(p => p.category).filter(Boolean))];
+          categoryListEl.innerHTML = categories.map(c => `<option value="${c}"></option>`).join('');
         } catch (err) {
           listEl.innerHTML = `<div class="empty-state">목록을 불러오지 못했습니다.</div>`;
           toast(err.message, true);
@@ -224,6 +233,7 @@
           const post = await fetchPostById(id);
           document.getElementById('title').value = post.title || '';
           document.getElementById('excerpt').value = post.excerpt || '';
+          document.getElementById('category').value = post.category || '';
           document.getElementById('tags').value = (post.tags || []).join(', ');
           contentEl.innerHTML = post.content || '';
           document.getElementById('published').checked = !!post.published;
@@ -389,6 +399,7 @@
         try {
           const coverFile = document.getElementById('cover').files[0];
           const tags = parseTags(document.getElementById('tags').value);
+          const category = document.getElementById('category').value.trim() || null;
           if (editingId) {
             const coverUrl = coverFile ? await uploadImage(coverFile) : editingCoverUrl;
             await updatePost(editingId, {
@@ -397,7 +408,8 @@
               content: contentEl.innerHTML,
               cover_image: coverUrl,
               published: document.getElementById('published').checked,
-              tags
+              tags,
+              category
             });
             toast('수정했습니다');
             exitEditMode();
@@ -409,7 +421,8 @@
               content: contentEl.innerHTML,
               coverUrl,
               published: document.getElementById('published').checked,
-              tags
+              tags,
+              category
             });
             toast('발행했습니다');
             form.reset();

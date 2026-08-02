@@ -1,13 +1,14 @@
 // js/posts.js — 공개 글 목록 / 상세 조회
 import { supabase, formatDate } from './api.js';
 
-export async function fetchPublishedPosts(tag = null) {
+export async function fetchPublishedPosts({ tag = null, category = null } = {}) {
   let query = supabase
     .from('posts')
-    .select('id, title, slug, excerpt, cover_image, tags, created_at')
+    .select('id, title, slug, excerpt, cover_image, tags, category, created_at')
     .eq('published', true)
     .order('created_at', { ascending: false });
   if (tag) query = query.contains('tags', [tag]);
+  if (category) query = query.eq('category', category);
   const { data, error } = await query;
   if (error) throw error;
   return data;
@@ -47,6 +48,15 @@ export function renderTagChips(tags) {
   return `<div class="tag-chips">${tags.map(t =>
     `<a class="tag-chip" href="index.html?tag=${encodeURIComponent(t)}">#${escapeHtml(t)}</a>`
   ).join('')}</div>`;
+}
+
+// 카테고리 뱃지 — index.html?category=... 로 필터링되는 링크
+export function renderCategoryBadge(category, { asLink = true } = {}) {
+  if (!category) return '';
+  const label = escapeHtml(category).toUpperCase();
+  return asLink
+    ? `<a class="category-badge" href="index.html?category=${encodeURIComponent(category)}">${label}</a>`
+    : `<span class="category-badge">${label}</span>`;
 }
 
 // 관리자 에디터가 만든 HTML을 허용된 태그/속성만 남기고 정제해서 렌더링

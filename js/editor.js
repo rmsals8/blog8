@@ -36,13 +36,14 @@ export function parseTags(raw = '') {
   )].slice(0, 10);
 }
 
-export async function createPost({ title, excerpt, content, coverUrl, published, tags }) {
+export async function createPost({ title, excerpt, content, coverUrl, published, tags, category }) {
   const slug = slugify(title);
   const { error } = await supabase.from('posts').insert({
     title, slug, excerpt, content,
     cover_image: coverUrl,
     published,
-    tags: tags || []
+    tags: tags || [],
+    category: category || null
   });
   if (error) throw error;
   return slug;
@@ -112,7 +113,7 @@ export async function fetchPostById(id) {
 export async function fetchAllPostsForAdmin() {
   const { data, error } = await supabase
     .from('posts')
-    .select('id, title, slug, published, tags, created_at')
+    .select('id, title, slug, published, tags, category, created_at')
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data;
@@ -129,7 +130,7 @@ export function renderAdminList(posts, container, { onChange, onEdit }) {
         <span class="status ${p.published ? 'published' : ''}">${p.published ? '공개' : '비공개'}</span>
         <span class="title">${p.title}</span>
         <div class="mono" style="margin-top:4px;color:var(--ink-soft)">
-          ${formatDate(p.created_at)}${p.tags && p.tags.length ? ' · ' + p.tags.join(', ') : ''}
+          ${formatDate(p.created_at)}${p.category ? ' · ' + p.category : ''}${p.tags && p.tags.length ? ' · ' + p.tags.join(', ') : ''}
         </div>
       </div>
       <div class="actions">

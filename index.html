@@ -9,27 +9,36 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div class="shell">
-    <aside class="spine">
-      <div class="spine-dot"></div>
-      <a href="index.html">blog8</a>
-    </aside>
-
-    <main class="main">
-      <div class="topbar">
-        <div class="mono" id="page-label">전체 글</div>
-        <nav>
-          <a href="index.html" class="active">글</a>
-        </nav>
+  <div class="site">
+    <header class="site-header">
+      <a href="index.html" class="brand" id="brand-name">blog8</a>
+      <nav class="site-nav">
+        <a href="index.html" class="active">홈</a>
+      </nav>
+      <div class="header-actions">
+        <button type="button" class="search-toggle" id="search-toggle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          검색
+        </button>
       </div>
+    </header>
 
-      <section class="hero">
+    <div class="search-bar" id="search-bar" hidden>
+      <input type="text" id="search-input" placeholder="글 제목이나 요약으로 검색...">
+    </div>
+
+    <main class="page">
+      <section class="hero-center">
+        <div class="mono overline" id="hero-label">blog8</div>
         <h1 id="site-headline">생각을 기록하는 공간</h1>
         <p>정리되지 않은 생각도, 다듬어진 글도 여기 남깁니다.</p>
       </section>
 
-      <section class="post-list" id="post-list">
-        <div class="empty-state">불러오는 중...</div>
+      <section class="featured-grid" id="featured-grid"></section>
+
+      <section id="grid-wrap">
+        <div id="results-heading-wrap"></div>
+        <div class="card-grid" id="post-grid"><div class="empty-state">불러오는 중...</div></div>
       </section>
 
       <footer class="site-footer">
@@ -39,27 +48,156 @@
   </div>
 
   <script type="module">
-    import { fetchPublishedPosts, renderPostList } from './js/posts.js';
-    import { toast, getSettings, applyFavicon } from './js/api.js';
+    import { fetchPublishedPosts, escapeHtml, renderTagChips, renderCategoryBadge } from './js/posts.js';
+    import { toast, getSettings, applyFavicon, formatDate } from './js/api.js';
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
     const settings = await getSettings();
     document.title = `${settings.site_title} — ${settings.site_tagline}`;
-    document.querySelector('.spine a').textContent = settings.site_title;
+    document.getElementById('brand-name').textContent = settings.site_title;
+    document.getElementById('hero-label').textContent = settings.site_title;
     document.getElementById('site-headline').textContent = settings.site_tagline;
     document.querySelector('footer.site-footer .mono').innerHTML =
       `${settings.footer_text} · <span id="year">${new Date().getFullYear()}</span>`;
     applyFavicon(settings.favicon_url);
 
-    const listEl = document.getElementById('post-list');
-    try {
-      const posts = await fetchPublishedPosts();
-      renderPostList(posts, listEl);
-    } catch (err) {
-      listEl.innerHTML = `<div class="empty-state">글을 불러오지 못했습니다.</div>`;
-      toast(err.message, true);
+    const featuredGrid = document.getElementById('featured-grid');
+    const resultsHeadingWrap = document.getElementById('results-heading-wrap');
+    const postGrid = document.getElementById('post-grid');
+
+    const params = new URLSearchParams(location.search);
+    const tagFilter = params.get('tag');
+    const categoryFilter = params.get('category');
+
+    let allPostsCache = [];
+
+    function cardHtml(p) {
+      return `
+        <article class="post-card-b">
+          ${p.cover_image ? `<a href="post.html?slug=${encodeURIComponent(p.slug)}"><img class="cover" src="${p.cover_image}" alt="" loading="lazy"></a>` : ''}
+          <div class="card-meta">
+            <span class="mono">${formatDate(p.created_at)}</span>
+            ${renderCategoryBadge(p.category)}
+          </div>
+          <h3><a href="post.html?slug=${encodeURIComponent(p.slug)}">${escapeHtml(p.title)}</a></h3>
+          ${p.excerpt ? `<p>${escapeHtml(p.excerpt)}</p>` : ''}
+          ${renderTagChips(p.tags)}
+        </article>
+      `;
     }
+
+    function renderFlatGrid(posts, container) {
+      if (!posts.length) {
+        container.innerHTML = `<div class="empty-state">해당하는 글이 없습니다.</div>`;
+        return;
+      }
+      container.innerHTML = posts.map(cardHtml).join('');
+    }
+
+    function renderFeatured(posts) {
+      if (!posts.length) {
+        featuredGrid.style.display = 'none';
+        postGrid.innerHTML = `<div class="empty-state">아직 작성된 글이 없습니다.</div>`;
+        return;
+      }
+      featuredGrid.style.display = '';
+      const [featured, ...restAll] = posts;
+      const topStories = restAll.slice(0, 3);
+      const rest = restAll.slice(3);
+
+      featuredGrid.innerHTML = `
+        <article class="featured-card">
+          ${renderCategoryBadge(featured.category)}
+          ${featured.cover_image ? `<a href="post.html?slug=${encodeURIComponent(featured.slug)}"><img class="cover" src="${featured.cover_image}" alt="" loading="lazy"></a>` : ''}
+          <h2><a href="post.html?slug=${encodeURIComponent(featured.slug)}">${escapeHtml(featured.title)}</a></h2>
+          ${featured.excerpt ? `<p>${escapeHtml(featured.excerpt)}</p>` : ''}
+        </article>
+        ${topStories.length ? `
+        <div class="top-stories">
+          <h3 class="section-heading">Top Stories</h3>
+          <div class="top-stories-list">
+            ${topStories.map((p, i) => `
+              <div class="top-story">
+                <div class="num">${i + 1}</div>
+                <div class="body">
+                  <h4><a href="post.html?slug=${encodeURIComponent(p.slug)}">${escapeHtml(p.title)}</a></h4>
+                  <div class="mono">${formatDate(p.created_at)}</div>
+                </div>
+                ${p.cover_image ? `<img class="thumb" src="${p.cover_image}" alt="" loading="lazy">` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>` : '<div></div>'}
+      `;
+
+      renderFlatGrid(rest, postGrid);
+    }
+
+    function showFilteredView(posts, label) {
+      featuredGrid.style.display = 'none';
+      resultsHeadingWrap.innerHTML = `
+        <div class="results-heading">
+          <h2 class="section-heading" style="margin-bottom:0;">${escapeHtml(label)}</h2>
+          <a href="index.html">← 전체 글 보기</a>
+        </div>
+      `;
+      renderFlatGrid(posts, postGrid);
+    }
+
+    async function init() {
+      try {
+        if (tagFilter || categoryFilter) {
+          const posts = await fetchPublishedPosts({ tag: tagFilter, category: categoryFilter });
+          allPostsCache = posts;
+          showFilteredView(posts, tagFilter ? `#${tagFilter}` : categoryFilter.toUpperCase());
+        } else {
+          const posts = await fetchPublishedPosts();
+          allPostsCache = posts;
+          renderFeatured(posts);
+        }
+      } catch (err) {
+        postGrid.innerHTML = `<div class="empty-state">글을 불러오지 못했습니다.</div>`;
+        toast(err.message, true);
+      }
+    }
+    init();
+
+    // ---- 검색 (이미 불러온 목록 안에서 제목/요약으로 필터링) ----
+    const searchToggle = document.getElementById('search-toggle');
+    const searchBar = document.getElementById('search-bar');
+    const searchInput = document.getElementById('search-input');
+
+    searchToggle.addEventListener('click', () => {
+      searchBar.hidden = !searchBar.hidden;
+      if (!searchBar.hidden) searchInput.focus();
+      else { searchInput.value = ''; restoreDefaultView(); }
+    });
+
+    function restoreDefaultView() {
+      if (tagFilter || categoryFilter) {
+        showFilteredView(allPostsCache, tagFilter ? `#${tagFilter}` : categoryFilter.toUpperCase());
+      } else {
+        resultsHeadingWrap.innerHTML = '';
+        renderFeatured(allPostsCache);
+      }
+    }
+
+    searchInput.addEventListener('input', () => {
+      const q = searchInput.value.trim().toLowerCase();
+      if (!q) { restoreDefaultView(); return; }
+      const matches = allPostsCache.filter(p =>
+        p.title.toLowerCase().includes(q) || (p.excerpt || '').toLowerCase().includes(q)
+      );
+      featuredGrid.style.display = 'none';
+      resultsHeadingWrap.innerHTML = `
+        <div class="results-heading">
+          <h2 class="section-heading" style="margin-bottom:0;">"${escapeHtml(searchInput.value.trim())}" 검색 결과 (${matches.length})</h2>
+          <a href="index.html">← 전체 글 보기</a>
+        </div>
+      `;
+      renderFlatGrid(matches, postGrid);
+    });
   </script>
 </body>
 </html>

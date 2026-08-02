@@ -32,7 +32,7 @@
   </div>
 
   <script type="module">
-    import { fetchPostBySlug, sanitizeHtml, escapeHtml, renderTagChips } from './js/posts.js';
+    import { fetchPostBySlug, sanitizeHtml, escapeHtml, renderTagChips, renderCategoryBadge } from './js/posts.js';
     import { formatDate, toast, getSettings, applyFavicon } from './js/api.js';
     import { applySeo } from './js/seo.js';
 
@@ -69,6 +69,7 @@
         root.innerHTML = `
           <article>
             <div class="article-head">
+              ${renderCategoryBadge(post.category)}
               <div class="mono">${formatDate(post.created_at)}</div>
               <h1>${escapeHtml(post.title)}</h1>
               ${renderTagChips(post.tags)}
