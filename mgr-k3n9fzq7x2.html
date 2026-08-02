@@ -293,13 +293,22 @@
         }
       });
 
-      // ---- 본문 이미지 크기 조절 ----
+      // ---- 본문 이미지 크기 조절 (버튼 + 드래그 핸들) ----
       let resizeToolbar = null;
+      let resizeHandle = null;
       let activeImg = null;
 
       function hideResizeToolbar() {
         if (resizeToolbar) { resizeToolbar.remove(); resizeToolbar = null; }
+        if (resizeHandle) { resizeHandle.remove(); resizeHandle = null; }
         activeImg = null;
+      }
+
+      function positionHandle(img) {
+        if (!resizeHandle) return;
+        const rect = img.getBoundingClientRect();
+        resizeHandle.style.top = `${rect.bottom - 8}px`;
+        resizeHandle.style.left = `${rect.right - 8}px`;
       }
 
       function showResizeToolbar(img) {
@@ -318,12 +327,47 @@
             const naturalWidth = img.naturalWidth || img.width;
             img.setAttribute('width', Math.round(naturalWidth * ratio));
             img.style.width = '';
-            hideResizeToolbar();
+            positionHandle(img);
             contentEl.focus();
           });
           resizeToolbar.appendChild(b);
         });
         document.body.appendChild(resizeToolbar);
+
+        // 우하단 드래그 핸들 (마우스로 직접 크기 조절)
+        resizeHandle = document.createElement('div');
+        resizeHandle.style.cssText = 'position:fixed;width:14px;height:14px;background:var(--moss);border:2px solid var(--paper);border-radius:50%;z-index:61;cursor:nwse-resize;';
+        document.body.appendChild(resizeHandle);
+        positionHandle(img);
+
+        let dragging = false;
+        let startX = 0;
+        let startWidth = 0;
+        const minWidth = 40;
+
+        resizeHandle.addEventListener('mousedown', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          dragging = true;
+          startX = ev.clientX;
+          startWidth = img.getBoundingClientRect().width;
+        });
+
+        function onMouseMove(ev) {
+          if (!dragging) return;
+          const naturalWidth = img.naturalWidth || startWidth;
+          const parentWidth = contentEl.getBoundingClientRect().width;
+          let newWidth = Math.round(startWidth + (ev.clientX - startX));
+          newWidth = Math.max(minWidth, Math.min(newWidth, Math.max(naturalWidth, parentWidth)));
+          img.setAttribute('width', newWidth);
+          img.style.width = '';
+          positionHandle(img);
+        }
+        function onMouseUp() {
+          if (dragging) { dragging = false; contentEl.focus(); }
+        }
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
       }
 
       contentEl.addEventListener('click', (e) => {
